@@ -1,1 +1,0 @@
-# Pattern detectors package initialization

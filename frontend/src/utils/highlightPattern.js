@@ -1,8 +1,15 @@
 // Utility function to highlight a specific candle on the chart
-export const highlightCandle = (candleIndex, layout) => {
-  if (!layout || candleIndex === undefined) return layout;
+export const highlightCandle = (pattern, ohlcvData, layout) => {
+  if (!layout || !pattern || !ohlcvData || ohlcvData.length === 0) return layout;
 
   const updatedLayout = { ...layout };
+  
+  // Find the candle data by candleIndex
+  const candleData = ohlcvData[pattern.candleIndex];
+  if (!candleData) {
+    console.warn(`No candle data found for index ${pattern.candleIndex}`);
+    return layout;
+  }
   
   // Add annotation to highlight the candle
   if (!updatedLayout.annotations) {
@@ -14,26 +21,27 @@ export const highlightCandle = (candleIndex, layout) => {
     ann => ann.name !== 'pattern-highlight'
   );
 
-  // Add new highlight annotation
+  // Add new highlight annotation using timestamp as x-coordinate
   updatedLayout.annotations.push({
-    x: candleIndex,
-    y: 0, // Will be positioned automatically
+    x: candleData.timestamp,
+    y: candleData.high + (candleData.high * 0.02), // Position above the candle
     xref: 'x',
-    yref: 'paper',
-    text: '🔍',
+    yref: 'y',
+    text: `${pattern.pattern}<br>${(pattern.confidence * 100).toFixed(0)}%`,
     showarrow: true,
     arrowhead: 2,
-    arrowsize: 1,
-    arrowwidth: 2,
+    arrowsize: 1.5,
+    arrowwidth: 3,
     arrowcolor: '#3b82f6',
     bgcolor: '#3b82f6',
     bordercolor: '#1e40af',
-    borderwidth: 1,
+    borderwidth: 2,
     font: {
-      size: 16,
+      size: 12,
       color: 'white'
     },
-    name: 'pattern-highlight'
+    name: 'pattern-highlight',
+    opacity: 0.9
   });
 
   return updatedLayout;

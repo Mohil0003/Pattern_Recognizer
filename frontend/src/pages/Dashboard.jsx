@@ -1,19 +1,29 @@
 import React, { useState } from 'react';
-import Header from '../components/Header';
 import PatternTable from '../components/PatternTable';
 import CandlestickChart from '../components/CandlestickChart';
 import useOHLCVData from '../hooks/useOHLCVData';
 
-const Dashboard = () => {
-  const [selectedSymbol, setSelectedSymbol] = useState('RELIANCE');
-  const [selectedPattern, setSelectedPattern] = useState(null);
+const Dashboard = ({ initialSelectedSymbol = 'RELIANCE', initialSelectedPattern = null, onBackToLanding }) => {
+  // Available symbols
+  const availableSymbols = ['RELIANCE', 'BAJAJ-AUTO', 'TCS', 'ICICIBANK', 'BHARTIARTL'];
+  
+  // Ensure the selected symbol is valid
+  const validSelectedSymbol = availableSymbols.includes(initialSelectedSymbol) ? initialSelectedSymbol : 'RELIANCE';
+  const [selectedSymbol, setSelectedSymbol] = useState(initialSelectedSymbol);
+  const [selectedPattern, setSelectedPattern] = useState(initialSelectedPattern);
+  
+  // Update selected symbol when initialSelectedSymbol changes
+  React.useEffect(() => {
+    setSelectedSymbol(initialSelectedSymbol);
+  }, [initialSelectedSymbol]);
+  
+  // Update selected pattern when initialSelectedPattern changes
+  React.useEffect(() => {
+    setSelectedPattern(initialSelectedPattern);
+  }, [initialSelectedPattern]);
   
   const { ohlcvData, patterns, loading, error } = useOHLCVData(selectedSymbol);
 
-  const handleSymbolChange = (symbol) => {
-    setSelectedSymbol(symbol);
-    setSelectedPattern(null); // Clear selected pattern when symbol changes
-  };
 
   const handlePatternClick = (pattern) => {
     setSelectedPattern(pattern);
@@ -26,12 +36,11 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header selectedSymbol={selectedSymbol} onSymbolChange={handleSymbolChange} />
+      <div className="min-h-screen bg-gray-50 pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
               <p className="text-gray-600">Loading data...</p>
             </div>
           </div>
@@ -42,8 +51,7 @@ const Dashboard = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header selectedSymbol={selectedSymbol} onSymbolChange={handleSymbolChange} />
+      <div className="min-h-screen bg-gray-50 pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
             <div className="flex">
@@ -64,13 +72,49 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header selectedSymbol={selectedSymbol} onSymbolChange={handleSymbolChange} />
+    <div className="min-h-screen bg-gray-50 pt-16">
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Dashboard Header */}
+        <div className="mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Chart Analysis Dashboard</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Symbol: <span className="font-medium text-indigo-600">{selectedSymbol}</span>
+                  {selectedPattern && (
+                    <span className="ml-4">
+                      Selected: <span className="font-medium text-indigo-600">{selectedPattern.pattern}</span>
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div className="flex items-center space-x-4 text-sm">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-indigo-600">{patterns.length}</div>
+                  <div className="text-gray-500">Patterns</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-green-600">
+                    {patterns.filter(p => ['Hammer', 'Morning Star', 'Three White Soldiers', 'Engulfing'].includes(p.pattern)).length}
+                  </div>
+                  <div className="text-gray-500">Bullish</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-red-600">
+                    {patterns.filter(p => ['Shooting Star', 'Evening Star', 'Hanging Man'].includes(p.pattern)).length}
+                  </div>
+                  <div className="text-gray-500">Bearish</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           {/* Pattern Table - Left Column */}
-          <div className="lg:col-span-1">
+          <div className="xl:col-span-1 order-2 xl:order-1">
             <PatternTable
               patterns={patterns}
               onPatternClick={handlePatternClick}
@@ -79,78 +123,27 @@ const Dashboard = () => {
           </div>
           
           {/* Chart - Right Column */}
-          <div className="lg:col-span-2">
+          <div className="xl:col-span-3 order-1 xl:order-2">
             <CandlestickChart
               ohlcvData={ohlcvData}
               selectedPattern={selectedPattern}
               onChartClick={handleChartClick}
+              patterns={patterns}
             />
           </div>
         </div>
         
         {/* Statistics Section */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
-                  <span className="text-primary-600 text-lg">📊</span>
-                </div>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total Patterns</p>
-                <p className="text-2xl font-semibold text-gray-900">{patterns.length}</p>
+          {patterns.map((pattern, index) => (
+            <div key={index} className="bg-white rounded-md shadow p-4">
+              <div className="flex flex-col items-center h-full">
+                <p className="text-xs font-medium text-gray-500">Pattern</p>
+                <p className="text-sm font-semibold text-gray-900">{pattern.pattern}</p>
+                <p className="text-xs text-gray-600">Confidence: {pattern.confidence}</p>
               </div>
             </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                  <span className="text-green-600 text-lg">📈</span>
-                </div>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Bullish Patterns</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {patterns.filter(p => ['Hammer', 'Morning Star', 'Three White Soldiers', 'Engulfing'].includes(p.pattern)).length}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                  <span className="text-red-600 text-lg">📉</span>
-                </div>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Bearish Patterns</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {patterns.filter(p => ['Shooting Star', 'Evening Star', 'Hanging Man'].includes(p.pattern)).length}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <span className="text-yellow-600 text-lg">⚖️</span>
-                </div>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Neutral Patterns</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {patterns.filter(p => ['Doji'].includes(p.pattern)).length}
-                </p>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
