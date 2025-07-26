@@ -116,6 +116,27 @@
             </select>
         </div>
         
+        <div class="form-group">
+            <label for="maxFiles">Max Files to Process (for performance):</label>
+            <select id="maxFiles">
+                <option value="1">1 File (Fastest)</option>
+                <option value="2">2 Files</option>
+                <option value="3" selected>3 Files (Recommended)</option>
+                <option value="5">5 Files</option>
+                <option value="10">10 Files (Slower)</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="maxRows">Max Rows per File:</label>
+            <select id="maxRows">
+                <option value="100">100 Rows (Fastest)</option>
+                <option value="300" selected>300 Rows (Recommended)</option>
+                <option value="500">500 Rows</option>
+                <option value="1000">1000 Rows (Slower)</option>
+            </select>
+        </div>
+        
         <button onclick="detectPatterns()">🔍 Detect Patterns</button>
         
         <div id="results" class="results" style="display: none;">
@@ -159,6 +180,8 @@
         async function detectPatterns() {
             const company = document.getElementById('company').value;
             const timeframe = document.getElementById('timeframe').value;
+            const maxFiles = document.getElementById('maxFiles').value;
+            const maxRows = document.getElementById('maxRows').value;
             const resultsDiv = document.getElementById('results');
             const resultsContent = document.getElementById('resultsContent');
             
@@ -172,11 +195,12 @@
             resultsContent.innerHTML = '<div class="loading">🔄 Detecting patterns...</div>';
             
             try {
-                // Build URL
+                // Build URL with performance parameters
                 let url = `${API_BASE}/${company}`;
                 if (timeframe) {
                     url += `/${timeframe}`;
                 }
+                url += `?max_files=${maxFiles}&max_rows=${maxRows}`;
                 
                 const response = await fetch(url);
                 const data = await response.json();
