@@ -1,0 +1,82 @@
+[
+  {
+    "id": 1,
+    "symbol": "RELIANCE",
+    "pattern": "Hammer",
+    "timeframe": "5min",
+    "timestamp": "2024-01-15T10:30:00Z",
+    "candleIndex": 45,
+    "confidence": 0.85,
+    "description": "Bullish reversal pattern with small body and long lower shadow"
+  },
+  {
+    "id": 2,
+    "symbol": "RELIANCE",
+    "pattern": "Doji",
+    "timeframe": "5min",
+    "timestamp": "2024-01-15T11:15:00Z",
+    "candleIndex": 52,
+    "confidence": 0.92,
+    "description": "Indecision pattern with open and close at same level"
+  },
+  {
+    "id": 3,
+    "symbol": "RELIANCE",
+    "pattern": "Engulfing",
+    "timeframe": "5min",
+    "timestamp": "2024-01-15T12:00:00Z",
+    "candleIndex": 58,
+    "confidence": 0.78,
+    "description": "Bullish engulfing pattern indicating potential reversal"
+  },
+  {
+    "id": 4,
+    "symbol": "INFY",
+    "pattern": "Shooting Star",
+    "timeframe": "15min",
+    "timestamp": "2024-01-15T09:45:00Z",
+    "candleIndex": 23,
+    "confidence": 0.81,
+    "description": "Bearish reversal pattern with small body and long upper shadow"
+  },
+  {
+    "id": 5,
+    "symbol": "INFY",
+    "pattern": "Morning Star",
+    "timeframe": "15min",
+    "timestamp": "2024-01-15T14:30:00Z",
+    "candleIndex": 31,
+    "confidence": 0.89,
+    "description": "Three-candle bullish reversal pattern"
+  },
+  {
+    "id": 6,
+    "symbol": "RELIANCE",
+    "pattern": "Evening Star",
+    "timeframe": "5min",
+    "timestamp": "2024-01-15T15:45:00Z",
+    "candleIndex": 72,
+    "confidence": 0.76,
+    "description": "Three-candle bearish reversal pattern"
+  },
+  {
+    "id": 7,
+    "symbol": "INFY",
+    "pattern": "Hanging Man",
+    "timeframe": "15min",
+    "timestamp": "2024-01-15T16:15:00Z",
+    "candleIndex": 38,
+    "confidence": 0.83,
+    "description": "Bearish reversal pattern similar to hammer but at top"
+  },
+  {
+    "id": 8,
+    "symbol": "RELIANCE",
+    "pattern": "Three White Soldiers",
+    "timeframe": "5min",
+    "timestamp": "2024-01-15T13:20:00Z",
+    "candleIndex": 65,
+    "confidence": 0.91,
+    "description": "Strong bullish continuation pattern"
+  }
+] 
