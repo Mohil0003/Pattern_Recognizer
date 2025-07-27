@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 const LandingPage = ({ onPatternClick }) => {
   const [patterns, setPatterns] = useState([]);
-  const [filteredPatterns, setFilteredPatterns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedSymbol, setSelectedSymbol] = useState('All');
@@ -372,73 +371,73 @@ const LandingPage = ({ onPatternClick }) => {
         </div>
 
         {/* Pattern Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
           {filteredPatterns.map(pattern => (
             <div
               key={pattern.id}
               onClick={() => handleCardClick(pattern)}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg hover:border-indigo-300 transition-all duration-300 cursor-pointer transform hover:-translate-y-1 group"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md hover:border-indigo-300 transition-all duration-200 cursor-pointer transform hover:-translate-y-0.5 group"
             >
-              <div className="p-6">
+              <div className="p-4">
                 {/* Header with Symbol and Icon */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="text-2xl">{getPatternIcon(pattern.pattern)}</div>
-                    <h3 className="text-xl font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="text-lg">{getPatternIcon(pattern.pattern)}</div>
+                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-indigo-600 transition-colors truncate">
                       {pattern.symbol}
                     </h3>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm text-gray-500">Confidence</div>
-                    <div className="text-lg font-semibold text-gray-900">
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-xs text-gray-500">Confidence</div>
+                    <div className="text-sm font-semibold text-gray-900">
                       {(pattern.confidence * 100).toFixed(0)}%
                     </div>
                   </div>
                 </div>
 
                 {/* Pattern Badge */}
-                <div className="mb-4">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getPatternColor(pattern.pattern)}`}>
+                <div className="mb-3">
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getPatternColor(pattern.pattern)} truncate max-w-full`}>
                     {pattern.pattern}
                   </span>
                 </div>
 
                 {/* Pattern Details */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-500">Timeframe</span>
-                    <span className="text-sm font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                    <span className="text-xs font-medium text-gray-500">Timeframe</span>
+                    <span className="text-xs font-semibold text-gray-900 bg-gray-100 px-1.5 py-0.5 rounded">
                       {pattern.timeframe}
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-500">Detected At</span>
-                    <span className="text-sm text-gray-700">
-                      {new Date(pattern.timestamp).toLocaleDateString()}
+                    <span className="text-xs font-medium text-gray-500">Detected</span>
+                    <span className="text-xs text-gray-700">
+                      {new Date(pattern.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-500">Time</span>
-                    <span className="text-sm text-gray-700">
-                      {new Date(pattern.timestamp).toLocaleTimeString()}
+                    <span className="text-xs font-medium text-gray-500">Time</span>
+                    <span className="text-xs text-gray-700">
+                      {new Date(pattern.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 </div>
 
                 {/* Description */}
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <p className="text-sm text-gray-600 line-clamp-2">
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <p className="text-xs text-gray-600 line-clamp-2 leading-tight">
                     {pattern.description}
                   </p>
                 </div>
 
                 {/* Click indicator */}
-                <div className="mt-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="mt-3 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <span className="text-xs text-indigo-600 font-medium flex items-center space-x-1">
-                    <span>Click to view chart</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span>View chart</span>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </span>
