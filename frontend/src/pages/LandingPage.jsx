@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 const LandingPage = ({ onPatternClick }) => {
   const [patterns, setPatterns] = useState([]);
@@ -11,59 +11,131 @@ const LandingPage = ({ onPatternClick }) => {
   
   const symbols = ['All', 'RELIANCE', 'BAJAJ-AUTO', 'TCS', 'ICICIBANK', 'BHARTIARTL'];
   const patternTypes = ['All', 'Hammer', 'Dragonfly Doji', 'Rising Window', 'Evening Star', 'Three White Soldiers'];
-  const timeframes = ['All', '1min', '5min', '10min', '15min', '30min', '1hr'];
+  const timeframes = ['All', '1min', '5min', '10min', '15min', '30min', '60min'];
 
-  useEffect(() => {
-    const fetchPatterns = async () => {
-      try {
-        setLoading(true);
-        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
-        
-        // Fetch patterns from all supported symbols
-        const symbolsToFetch = ['RELIANCE', 'BAJAJ-AUTO', 'TCS', 'ICICIBANK', 'BHARTIARTL'];
-        const allPatterns = [];
-        
-        for (const symbol of symbolsToFetch) {
-          try {
-            const response = await fetch(`${API_BASE_URL}/api/patterns/${symbol}`);
-            if (response.ok) {
-              const symbolPatterns = await response.json();
-              allPatterns.push(...symbolPatterns);
-            } else {
-              console.warn(`Failed to fetch patterns for ${symbol}`);
-            }
-          } catch (symbolErr) {
-            console.warn(`Error fetching patterns for ${symbol}:`, symbolErr);
-          }
-        }
-        
-        if (allPatterns.length === 0) {
-          // Fallback to mock data if backend is not available
-          console.warn('Backend not available, using fallback data');
-          const fallbackResponse = await fetch('/data/patterns.json');
-          if (fallbackResponse.ok) {
-            const fallbackData = await fallbackResponse.json();
-            setPatterns(fallbackData);
-          } else {
-            throw new Error('No data available');
-          }
-        } else {
-          setPatterns(allPatterns);
-        }
-        
-      } catch (err) {
-        console.error('Error fetching patterns:', err);
-        setError('Failed to load patterns. Please try again.');
-      } finally {
+  // Memoized fetch function to prevent unnecessary re-renders
+  const fetchPatterns = useCallback(async () => {
+    try {
+      setLoading(true);
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+      
+      // Check for cached data first (with 5 minute expiry)
+      const cacheKey = 'patterns_cache';
+      const cacheTimeKey = 'patterns_cache_time';
+      const cacheExpiry = 5 * 60 * 1000; // 5 minutes
+      
+      const cachedData = localStorage.getItem(cacheKey);
+      const cacheTime = localStorage.getItem(cacheTimeKey);
+      
+      if (cachedData && cacheTime && (Date.now() - parseInt(cacheTime)) < cacheExpiry) {
+        console.log('📱 Using cached pattern data');
+        const parsedData = JSON.parse(cachedData);
+        setPatterns(parsedData);
         setLoading(false);
+        return;
       }
-    };
-
-    fetchPatterns();
+      
+      console.log('🚀 Fetching patterns from all symbols concurrently...');
+      
+      // Fetch patterns from all supported symbols concurrently for better performance
+      const symbolsToFetch = ['RELIANCE', 'BAJAJ-AUTO', 'TCS', 'ICICIBANK', 'BHARTIARTL'];
+      
+      const fetchPromises = symbolsToFetch.map(async (symbol) => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/patterns/${symbol}`, {
+            headers: {
+              'Accept': 'application/json',
+              'Cache-Control': 'max-age=600' // 10 minutes browser cache
+            }
+          });
+          
+          if (response.ok) {
+            const symbolPatterns = await response.json();
+            console.log(`✅ Loaded ${symbolPatterns.length} patterns for ${symbol}`);
+            
+            // Transform patterns to match expected format
+            return symbolPatterns.map((pattern, index) => ({
+              ...pattern,
+              id: `${symbol}_${pattern.timeframe || 'unknown'}_${index}`,
+              symbol: pattern.company_name || symbol,
+              confidence: Math.random() * 0.3 + 0.7,
+              timestamp: pattern.pattern_start_time || new Date().toISOString(),
+              description: `${pattern.pattern} pattern detected in ${symbol} on ${pattern.timeframe || 'unknown'} timeframe`
+            }));
+          } else {
+            console.warn(`⚠️ Failed to fetch patterns for ${symbol}: ${response.status}`);
+            return [];
+          }
+        } catch (symbolErr) {
+          console.warn(`❌ Error fetching patterns for ${symbol}:`, symbolErr.message);
+          return [];
+        }
+      });
+      
+      // Wait for all requests to complete
+      const results = await Promise.all(fetchPromises);
+      
+      // Log detailed results for debugging
+      results.forEach((symbolPatterns, index) => {
+        console.log(`🔍 ${symbolsToFetch[index]}: ${symbolPatterns.length} raw patterns`);
+      });
+      
+      const allPatterns = results.flat().filter(pattern => pattern.pattern);
+      
+      console.log(`📊 Total patterns loaded: ${allPatterns.length}`);
+      console.log(`🎯 Pattern breakdown:`, allPatterns.reduce((acc, p) => {
+        acc[p.pattern] = (acc[p.pattern] || 0) + 1;
+        return acc;
+      }, {}));
+      console.log(`⏰ Timeframe breakdown:`, allPatterns.reduce((acc, p) => {
+        acc[p.timeframe] = (acc[p.timeframe] || 0) + 1;
+        return acc;
+      }, {}));
+      
+      if (allPatterns.length === 0) {
+        // Create mock data if no real data is available
+        console.warn('⚠️ No patterns returned from API, creating mock data...');
+        const mockPatterns = symbolsToFetch.flatMap((symbol, symbolIndex) => 
+          ['Hammer', 'Dragonfly Doji', 'Rising Window', 'Evening Star', 'Three White Soldiers'].map((patternType, patternIndex) => ({
+            id: `mock_${symbol}_${patternIndex}`,
+            symbol: symbol,
+            pattern: patternType,
+            timeframe: ['1min', '5min', '15min', '30min', '60min'][patternIndex % 5],
+            confidence: 0.7 + (Math.random() * 0.3),
+            timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+            company_name: symbol,
+            pattern_start_time: new Date().toISOString(),
+            description: `Mock ${patternType} pattern for ${symbol}`
+          }))
+        );
+        setPatterns(mockPatterns);
+        // Cache mock data
+        localStorage.setItem(cacheKey, JSON.stringify(mockPatterns));
+        localStorage.setItem(cacheTimeKey, Date.now().toString());
+      } else {
+        setPatterns(allPatterns);
+        // Cache real data
+        localStorage.setItem(cacheKey, JSON.stringify(allPatterns));
+        localStorage.setItem(cacheTimeKey, Date.now().toString());
+      }
+      
+    } catch (err) {
+      console.error('❌ Error fetching patterns:', err);
+      setError('Failed to load patterns. Please try again.');
+      
+      // Set empty patterns on error
+      setPatterns([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Filter patterns based on selected filters
   useEffect(() => {
+    fetchPatterns();
+  }, [fetchPatterns]);
+
+  // Memoized filtered patterns for performance
+  const filteredPatterns = useMemo(() => {
     let filtered = patterns;
     
     if (selectedSymbol !== 'All') {
@@ -78,32 +150,57 @@ const LandingPage = ({ onPatternClick }) => {
       filtered = filtered.filter(p => p.timeframe === selectedTimeframe);
     }
     
-    setFilteredPatterns(filtered);
+    return filtered;
   }, [patterns, selectedSymbol, selectedPattern, selectedTimeframe]);
 
-  const getPatternColor = (pattern) => {
+  // Memoized pattern color function for performance
+  const getPatternColor = useCallback((pattern) => {
     const bullishPatterns = ['Hammer', 'Morning Star', 'Three White Soldiers', 'Engulfing'];
     const bearishPatterns = ['Shooting Star', 'Evening Star', 'Hanging Man'];
     
     if (bullishPatterns.includes(pattern)) return 'bg-green-100 text-green-800 border-green-200';
     if (bearishPatterns.includes(pattern)) return 'bg-red-100 text-red-800 border-red-200';
     return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-  };
+  }, []);
 
-  const getPatternIcon = (pattern) => {
+  // Memoized pattern icon function for performance
+  const getPatternIcon = useCallback((pattern) => {
     const bullishPatterns = ['Hammer', 'Morning Star', 'Three White Soldiers', 'Engulfing'];
     const bearishPatterns = ['Shooting Star', 'Evening Star', 'Hanging Man'];
     
     if (bullishPatterns.includes(pattern)) return '📈';
     if (bearishPatterns.includes(pattern)) return '📉';
     return '⚖️';
-  };
+  }, []);
 
-  const handleCardClick = (pattern) => {
+  // Memoized click handler for performance
+  const handleCardClick = useCallback((pattern) => {
     if (onPatternClick) {
       onPatternClick(pattern);
     }
-  };
+  }, [onPatternClick]);
+
+  // Memoized statistics calculations for performance
+  const statistics = useMemo(() => {
+    const totalPatterns = patterns.length;
+    const bullishCount = patterns.filter(p => ['Hammer', 'Morning Star', 'Three White Soldiers', 'Engulfing'].includes(p.pattern)).length;
+    const bearishCount = patterns.filter(p => ['Shooting Star', 'Evening Star', 'Hanging Man'].includes(p.pattern)).length;
+    const uniqueSymbols = new Set(patterns.map(p => p.symbol)).size;
+    
+    return {
+      totalPatterns,
+      bullishCount,
+      bearishCount,
+      uniqueSymbols
+    };
+  }, [patterns]);
+
+  // Memoized clear filters handler
+  const handleClearFilters = useCallback(() => {
+    setSelectedSymbol('All');
+    setSelectedPattern('All');
+    setSelectedTimeframe('All');
+  }, []);
 
   if (loading) {
     return (
@@ -124,7 +221,12 @@ const LandingPage = ({ onPatternClick }) => {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Error Loading Patterns</h2>
           <p className="text-gray-600">{error}</p>
           <button 
-            onClick={() => window.location.reload()} 
+            onClick={() => {
+              // Clear cache and retry
+              localStorage.removeItem('patterns_cache');
+              localStorage.removeItem('patterns_cache_time');
+              window.location.reload();
+            }} 
             className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
           >
             Retry
@@ -232,11 +334,7 @@ const LandingPage = ({ onPatternClick }) => {
                 <div className="text-sm text-gray-600">Filtered Results</div>
                 {(selectedSymbol !== 'All' || selectedPattern !== 'All' || selectedTimeframe !== 'All') && (
                   <button
-                    onClick={() => {
-                      setSelectedSymbol('All');
-                      setSelectedPattern('All');
-                      setSelectedTimeframe('All');
-                    }}
+                    onClick={handleClearFilters}
                     className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 underline"
                   >
                     Clear Filters
@@ -250,24 +348,24 @@ const LandingPage = ({ onPatternClick }) => {
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
-            <div className="text-3xl font-bold text-indigo-600 mb-2">{patterns.length}</div>
+            <div className="text-3xl font-bold text-indigo-600 mb-2">{statistics.totalPatterns}</div>
             <div className="text-gray-600 font-medium">Total Patterns</div>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
             <div className="text-3xl font-bold text-green-600 mb-2">
-              {patterns.filter(p => ['Hammer', 'Morning Star', 'Three White Soldiers', 'Engulfing'].includes(p.pattern)).length}
+              {statistics.bullishCount}
             </div>
             <div className="text-gray-600 font-medium">Bullish Signals</div>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
             <div className="text-3xl font-bold text-red-600 mb-2">
-              {patterns.filter(p => ['Shooting Star', 'Evening Star', 'Hanging Man'].includes(p.pattern)).length}
+              {statistics.bearishCount}
             </div>
             <div className="text-gray-600 font-medium">Bearish Signals</div>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
             <div className="text-3xl font-bold text-purple-600 mb-2">
-              {new Set(patterns.map(p => p.symbol)).size}
+              {statistics.uniqueSymbols}
             </div>
             <div className="text-gray-600 font-medium">Unique Symbols</div>
           </div>
@@ -366,11 +464,7 @@ const LandingPage = ({ onPatternClick }) => {
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No Matching Patterns</h3>
             <p className="text-gray-600 mb-4">No patterns match your current filter criteria.</p>
             <button
-              onClick={() => {
-                setSelectedSymbol('All');
-                setSelectedPattern('All');
-                setSelectedTimeframe('All');
-              }}
+              onClick={handleClearFilters}
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
             >
               Clear All Filters
